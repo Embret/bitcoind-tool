@@ -11,14 +11,16 @@ def help():
 	print('Theese are the available commands:\n')
 	print('help\t- this help function')
 	print('create\t- create a new multi signature bitcoin address')
-	print('spend\t- spend from a multi signature bitcoin address')
+	print('spend\t- spend from a multi signature bitcoin address (not available yet)')
 	print('exit\t- terminate the program\n')
 
 def account_exists(account_name): # Check if the account name is valid
 	check_name = rpc_interface.getaddressesbyaccount(account_name) # Request addresses in the given account
+
 	if not check_name: # If bitcoind returns an empty list
 		print('This account name has not been used.')
 		return False
+
 	else:
 		print('This account name exists in bitcoind.')
 		return True
@@ -32,7 +34,7 @@ def create_multisig(account_name): # Function for generating a new multisig addr
 		new_address.append(rpc_interface.getnewaddress(account_name)) # Request a new address
 		print('DEBUG: ' + new_address[i])
 
-		address_info = append(rpc_interface.validateaddress(new_address[i])) # Request the public key
+		address_info = rpc_interface.validateaddress(new_address[i]) # Request the public key
 
 		public_key.append(address_info['pubkey']) # Get the key itself from the returned dictionary
 		print('DEBUG: ' + public_key[i])
@@ -46,7 +48,7 @@ def create_multisig(account_name): # Function for generating a new multisig addr
 
 	return multisig_address
 
-print('bitcoind-tool 0.1.1\n')
+print('bitcoind-tool 0.1.2\n')
 run = True
 
 while run == True:
@@ -62,7 +64,9 @@ while run == True:
 			account_name = input('Specify a name for the multisig address: ')
 			check_account = account_exists(account_name) # Check if the account name is taken
 
-		create_multisig(account_name)
+		multisig_info = create_multisig(account_name)
+
+		print(multisig_info)
 
 	elif choice == 'exit':
 		sys.exit(0)
