@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
 from bitcoin.rpc import RawProxy
+from os.path import expanduser
 import os
-import code
 import sys
 
 rpc_interface = RawProxy() # Intitialize/Construct(?) the imported function to use the rpc interface
@@ -30,25 +30,46 @@ def create_multisig(account_name): # Function for generating a new multisig addr
 	public_key = [] # To store the public keys returned from bitcoind
 	private_key = [] # To store the private keys returned from bitcoid
 
+	print('\nIMPORTANT:\n')
+	print('Theese are the private keys associated with this multisig address. You need to WRITE THEM DOWN!\n')
+
 	for i in range(3): # Request new addresses from bitcoind
 		new_address.append(rpc_interface.getnewaddress(account_name)) # Request a new address
-		print('DEBUG: ' + new_address[i])
 
 		address_info = rpc_interface.validateaddress(new_address[i]) # Request the public key
 
 		public_key.append(address_info['pubkey']) # Get the key itself from the returned dictionary
-		print('DEBUG: ' + public_key[i])
 
 		private_key.append(rpc_interface.dumpprivkey(new_address[i])) # Get the private key
-		print('DEBUG: ' + private_key[i])
 
-	multisig_address = rpc_interface.createmultisig(2, public_key) # Generate the multisig address
+		print('\n' + private_key[i] + '\n')
+
+	multisig = rpc_interface.createmultisig(2, public_key) # Generate the multisig address
 	
 	rpc_interface.addmultisigaddress(2, public_key, account_name) # Add the multisig address to the wallet
 
-	return multisig_address
+	return multisig # Return a dictionary containing the address and the redeemScript
 
-print('bitcoind-tool 0.1.2\n')
+def write_file(account_name, content): # Function to write the redeemScript and the address to a file
+	directory = expanduser('~') + '/bitcoind-tool/' + account_name + '/'
+
+	if not os.path.exists(directory): # If the directory does not exist, create it
+		os.makedirs(directory)
+
+		print('Created the directory ' + directory)
+
+	else:
+		print('The directory ' + directory + ' already exists on the system.')
+
+	filename = directory + account_name + '.multisig' # This will be the name of the file created
+	the_file = open(filename, 'w') # This opens the file for writing
+	the_file.write(content['address'] + '\n') # This writes the address to the file
+	the_file.write(content['redeemScript'])
+	the_file.close() # Closes the file
+
+	return filename
+
+print('bitcoind-tool 0.1.3\n')
 run = True
 
 while run == True:
@@ -66,7 +87,12 @@ while run == True:
 
 		multisig_info = create_multisig(account_name)
 
-		print(multisig_info)
+		print('\nThe newly created address:\n' + multisig_info['address'])
+		print('\nWill now create a file with the rest of the necessary information.\n')
+
+		file_location = write_file(account_name, multisig_info)
+
+		print('\nDone. Created ' + file_location + '\n')
 
 	elif choice == 'exit':
 		sys.exit(0)
